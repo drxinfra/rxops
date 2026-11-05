@@ -7,7 +7,7 @@
       "name": "rxops",
       "source": "./",
       "description": "Скилы для администраторов Directum RX: инцидент, логи и база ошибок, PostgreSQL, RabbitMQ, Elasticsearch, обновление, бэкап, ИБ, сайзинг. Хуки прячут пароли и спрашивают перед изменениями.",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "category": "devops",
       "tags": ["directum-rx", "devops", "postgresql", "rabbitmq", "elasticsearch"]
     }

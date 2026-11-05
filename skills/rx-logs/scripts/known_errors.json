@@ -1,5 +1,5 @@
 {
- "count": 204,
+ "count": 205,
  "errors": [
   {
    "check": "1. Память на сервере сервисов Ario в момент ошибок: `free -h`, мониторинг.\n2. Соответствие сервера требованиям вендора для Ario.",
@@ -83,7 +83,7 @@
    "component": "Установка и обновление",
    "fix": "1. По коду понять этап и искать ошибку в журнале утилиты на этом этапе.\n2. Для кода 2 сверить версии и доступность веб-сервера.\n3. Для кода 3 смотреть журнал веб-сервера: инициализация выполняется на нём.\n4. В конвейерах сборки и выкладки проверять код возврата, а не только вывод: публикация с ненулевым кодом могла пройти частично.",
    "patterns": [
-    "DeploymentToolCore.{0,80}(exit|код возврата|return) ?code ?[1-8]\\b",
+    "DeploymentToolCore.{0,80}(exit ?code|exited with code|код возврата|return ?code)\\W{0,3}[1-8]\\b",
     "dt deploy.{0,80}code [1-8]\\b"
    ],
    "slug": "deploymenttoolcore-exit-codes",
@@ -133,7 +133,7 @@
    "component": "Установка и обновление",
    "fix": "1. В папке Directum Launcher выполнить `./do.sh components add-all` (Linux) или `do components add-all` (Windows).\n2. Удалить архив `directumrx.tar.gz` или `directumrx.zip`.\n3. Повторить обновление.",
    "patterns": [
-    "root action .{0,60} already exists"
+    "root action (.{1,60} )?already exists"
    ],
    "slug": "directum-launcher-root-action-already-exists",
    "title": "root action already exists",
@@ -291,7 +291,7 @@
    "component": "Сервер",
    "fix": "В `filebeat.yml` в секции `output.logstash` задать время жизни соединения меньше предела межсетевого экрана и отключить конвейерную отправку, без которой `ttl` не работает:\n\n    output.logstash:\n      hosts: [\"logstash:5044\"]\n      ttl: 60s\n      pipelining: 0\n\nПерезапустить Filebeat и проверить, что ошибки в его журнале прекратились.",
    "patterns": [
-    "Failed to publish events caused by: write tcp .{0,120}connection reset by peer"
+    "Failed to publish events caused by: write tcp\\b.{0,120}connection reset by peer"
    ],
    "slug": "filebeat-failed-to-publish-connection-reset",
    "title": "Failed to publish events caused by: write tcp: write: connection reset by peer",
@@ -403,7 +403,8 @@
    "patterns": [
     "type=\"?LOGIN_ERROR",
     "error=\"?cookie_not_found",
-    "error=\"?invalid_user_credentials"
+    "error=\"?invalid_user_credentials",
+    "\\bLOGIN_ERROR\\b.{0,300}\\b(cookie_not_found|invalid_user_credentials|user_not_found|user_temporarily_disabled|user_disabled|expired_code|invalid_redirect_uri)\\b"
    ],
    "slug": "keycloak-login-error-events",
    "title": "Keycloak LOGIN_ERROR: cookie_not_found, invalid_user_credentials, user_not_found",
@@ -507,7 +508,7 @@
    "component": "Контейнеры и Kubernetes",
    "fix": "1. Поднять `timeoutSeconds` с запасом относительно реального времени команды.\n2. Заменить тяжёлую команду лёгкой: проверка порта или HTTP-адреса здоровья вместо полной диагностики.\n3. Проверку жизни делать проще и терпимее проверки готовности: ложный перезапуск под нагрузкой только усиливает аварию.",
    "patterns": [
-    "probe failed: command .{0,200} timed out",
+    "probe failed: command( .{1,200})? timed out",
     "probe errored: rpc error"
    ],
    "slug": "kubernetes-exec-probe-timed-out",
@@ -546,6 +547,7 @@
    "component": "Контейнеры и Kubernetes",
    "fix": "1. Если под запустился, ничего не делать.\n2. Если объекта нет, создать его или поправить ссылку в описании пода.\n3. Если объект есть, а ошибка держится долго, перезапустить под. При массовых ошибках на одном узле посмотреть журнал kubelet.",
    "patterns": [
+    "MountVolume\\.SetUp failed for volume.{0,200}not registered",
     "object \".{1,80}\"/\".{1,120}\" not registered"
    ],
    "slug": "kubernetes-failedmount-object-not-registered",
@@ -761,7 +763,7 @@
    "patterns": [
     "memberlist: Failed fallback TCP ping",
     "Failed to join .{0,40}:7946",
-    "partial join"
+    "partial join.{0,40}Failed to join"
    ],
    "slug": "metallb-memberlist-failed-to-join",
    "title": "memberlist: Failed fallback TCP ping. partial join: Failed to join :7946",
@@ -774,7 +776,8 @@
    "fix": "1. Вернуть узлы и диски: сеть, питание, монтирование. После возврата MinIO сам долечит данные.\n2. Сломанный диск заменить, MinIO восстановит на нём части объектов.\n3. Не перезапускать узлы по очереди слишком быстро: каждый перезапуск снова уменьшает число дисков в строю.\n4. Поставить алерт на любой диск не в строю: при одном отказе кворум ещё есть, и это время, чтобы починить.",
    "patterns": [
     "Insufficient number of drives online",
-    "drives? (offline|is offline)",
+    "\\b[1-9]\\d* drives? offline",
+    "drives? (is|are) offline",
     "Read failed\\. Insufficient"
    ],
    "slug": "minio-insufficient-drives-online",
@@ -830,7 +833,7 @@
    "fix": "1. Вернуть NFS-сервер или сеть до него. Зависшие процессы продолжат работу сами.\n2. Не использовать `soft` для данных, где важна целостность: при таймауте запись тихо потеряется.\n3. Задать разумные `timeo` и `retrans` и следить за повторными отправками в мониторинге: рост ретрансмитов заранее показывает проблемы с сетью или сервером.",
    "patterns": [
     "nfs: server .* not responding",
-    "still trying"
+    "not responding, still trying"
    ],
    "slug": "nfs-server-not-responding",
    "title": "nfs: server not responding, still trying",
@@ -910,7 +913,7 @@
    "fix": "1. Установить на компьютер с сервисом NOMAD корневой и промежуточные сертификаты удостоверяющего центра.\n2. Попросить сотрудника обновить данные в приложении и проверить подписание.",
    "patterns": [
     "Не удается выстроить цепочку сертификатов от данного до корневого",
-    "NomadCertificatesValidator"
+    "\"l\":\\s?\"(Warn\\w*|Error)\".{0,200}NomadCertificatesValidator"
    ],
    "slug": "nomad-certificate-chain-not-built",
    "title": "Не удается выстроить цепочку сертификатов от данного до корневого",
@@ -947,7 +950,7 @@
    "component": "PostgreSQL",
    "fix": "1. Починить архивирование, если оно ещё падает.\n2. Сразу снять новый полный бэкап: от него архив снова будет непрерывным.\n3. Старые бэкапы до дыры остаются годными для восстановления на момент самого бэкапа, но не дальше дыры.\n4. Поставить алерты на падение `archive_command` и на дыры в архиве, а раз в месяц проверять восстановление на отдельной машине.",
    "patterns": [
-    "WAL segment .* is absent",
+    "WAL segment .{0,200}is absent",
     "There are not enough WAL records to (consistenly|consistently) restore backup"
    ],
    "slug": "pg-probackup-wal-segment-is-absent",
@@ -986,7 +989,7 @@
    "fix": "1. Ускорить запрос: чаще всего не хватает индекса на столбец из условия или соединения. Проверить, нет ли ожидания блокировок: тогда запрос не медленный, а ждёт.\n2. Если запрос тяжёлый по природе (отчёт, массовая операция), задать больший таймаут только для этой роли или сессии, а не для всей базы.\n3. Не отключать таймаут совсем: без него один запрос может держать ресурсы часами.",
    "patterns": [
     "canceling statement due to statement timeout",
-    "\\b57014\\b"
+    "\\b57014:|SQLSTATE\\W{0,4}57014\\b|(Npgsql|PostgresException).{0,40}\\b57014\\b|ERROR:\\s*57014\\b"
    ],
    "slug": "postgresql-canceling-statement-due-to-statement-timeout",
    "title": "ERROR: canceling statement due to statement timeout",
@@ -999,7 +1002,7 @@
    "fix": "1. Найти и завершить долгую транзакцию, если она зависла: `SELECT pg_terminate_backend(<pid>);`.\n2. Тяжёлые операции (перестроение, массовые изменения) переносить в окно обслуживания.\n3. Ограничить висящие транзакции параметром `idle_in_transaction_session_timeout`.",
    "patterns": [
     "canceling statement due to lock timeout",
-    "\\b55P03\\b"
+    "\\b55P03:|SQLSTATE\\W{0,4}55P03\\b|(Npgsql|PostgresException).{0,40}\\b55P03\\b|ERROR:\\s*55P03\\b"
    ],
    "slug": "postgresql-canceling-statement-lock-timeout",
    "title": "ERROR: canceling statement due to lock timeout",
@@ -1023,8 +1026,8 @@
    "component": "PostgreSQL",
    "fix": "1. Строковые значения писать в одинарных кавычках.\n2. Имена с заглавными буквами писать в двойных кавычках ровно так, как они созданы.\n3. Если запрос из отчёта или скрипта под другую версию, привести его к текущей схеме.",
    "patterns": [
-    "\\b42703\\b",
-    "column \".{1,80}\" does not exist"
+    "\\b42703:|SQLSTATE\\W{0,4}42703\\b|(Npgsql|PostgresException).{0,40}\\b42703\\b|ERROR:\\s*42703\\b",
+    "column (\"[^\"]{1,80}\"|\\S{1,80}) does not exist"
    ],
    "slug": "postgresql-column-does-not-exist",
    "title": "ERROR: column ... does not exist",
@@ -1074,7 +1077,7 @@
    "component": "PostgreSQL",
    "fix": "1. Разбирать первую ошибку, а эти считать её следствием.\n2. В своём коде после ошибки внутри транзакции выполнять `ROLLBACK` или откатываться к точке сохранения (`SAVEPOINT`), прежде чем продолжать.",
    "patterns": [
-    "\\b25P02\\b",
+    "\\b25P02:|SQLSTATE\\W{0,4}25P02\\b|(Npgsql|PostgresException).{0,40}\\b25P02\\b|ERROR:\\s*25P02\\b",
     "current transaction is aborted, commands ignored"
    ],
    "slug": "postgresql-current-transaction-is-aborted",
@@ -1088,7 +1091,7 @@
    "fix": "1. Подождать окончания восстановления. Сервисы RX переподключатся сами.\n2. Найти, кто съел память: слишком большой `work_mem` при многих соединениях, тяжёлый запрос, соседний сервис на том же сервере.\n3. Пересчитать настройки памяти. Грубая проверка: `shared_buffers` плюс `max_connections` × `work_mem` не должны превышать память сервера.\n4. Для сервера только под базу поставить `vm.overcommit_memory = 2`, чтобы запрос получал отказ вместо убийства процесса.\n\nНастройки памяти под ваш сервер считает калькулятор PostgreSQL (https://drxinfra.ru/postgresql-config.html).",
    "patterns": [
     "the database system is in recovery mode",
-    "57P03",
+    "\\b57P03:|SQLSTATE\\W{0,4}57P03\\b|(Npgsql|PostgresException).{0,40}\\b57P03\\b|ERROR:\\s*57P03\\b",
     "crash of another server process",
     "the database system is starting up",
     "was terminated by signal 9"
@@ -1104,7 +1107,7 @@
    "fix": "1. Собрать с одного случая: время, оба запроса из `DETAIL` и `CONTEXT`, какой сервис их выполнял.\n2. Передать это вендору или вашим разработчикам. Лечится порядком обращения к записям в коде, настройкой базы это не исправить.\n3. Проверить, нет ли долгих транзакций: они увеличивают шанс цикла.\n\nПодробный разбор с примерами: Дедлоки 40P01 в PostgreSQL под Directum RX (https://drxinfra.ru/blog/postgresql-deadlock-40p01.html).",
    "patterns": [
     "deadlock detected",
-    "\\b40P01\\b"
+    "\\b40P01:|SQLSTATE\\W{0,4}40P01\\b|(Npgsql|PostgresException).{0,40}\\b40P01\\b|ERROR:\\s*40P01\\b"
    ],
    "slug": "postgresql-deadlock-detected-40p01",
    "title": "ERROR: deadlock detected (SQLSTATE 40P01)",
@@ -1116,7 +1119,7 @@
    "component": "PostgreSQL",
    "fix": "1. Отставшую последовательность передвинуть за максимум:\n\n    SELECT setval('documents_id_seq', (SELECT max(id) FROM documents));\n\n2. После восстановления или переноса базы проверить так все последовательности, а не только ту, на которой упало.\n3. Разовые конфликты при одновременной вставке решать в приложении: повтором операции или вставкой с `ON CONFLICT`.",
    "patterns": [
-    "\\b23505\\b",
+    "\\b23505:|SQLSTATE\\W{0,4}23505\\b|(Npgsql|PostgresException).{0,40}\\b23505\\b|ERROR:\\s*23505\\b",
     "duplicate key value violates unique constraint"
    ],
    "slug": "postgresql-duplicate-key-unique-constraint",
@@ -1142,7 +1145,7 @@
    "component": "PostgreSQL",
    "fix": "1. При удалении сначала удалить или перепривязать ссылающиеся строки, либо удалять через приложение, которое делает это правильно.\n2. При загрузке данных загружать сначала справочные таблицы, потом ссылающиеся.\n3. Не отключать внешние ключи, чтобы загрузка прошла: битые ссылки потом проявятся ошибками в приложении.",
    "patterns": [
-    "\\b23503\\b",
+    "\\b23503:|SQLSTATE\\W{0,4}23503\\b|(Npgsql|PostgresException).{0,40}\\b23503\\b|ERROR:\\s*23503\\b",
     "violates foreign key constraint"
    ],
    "slug": "postgresql-foreign-key-violation",
@@ -1155,7 +1158,7 @@
    "component": "PostgreSQL",
    "fix": "1. Привести аргумент к нужному типу: `round(avg(x)::numeric, 2)`, `upper(id::text)`.\n2. Если функции нет в базе, установить расширение (`CREATE EXTENSION ...`) или указать схему явно.\n3. Если запрос написан под другую СУБД, например в скрипте проверки версии под Aurora, а выполняется на обычном PostgreSQL, исправить запрос, а не базу.",
    "patterns": [
-    "\\b42883\\b",
+    "\\b42883:|SQLSTATE\\W{0,4}42883\\b|(Npgsql|PostgresException).{0,40}\\b42883\\b|ERROR:\\s*42883\\b",
     "function .{1,120} does not exist"
    ],
    "slug": "postgresql-function-does-not-exist",
@@ -1169,7 +1172,7 @@
    "fix": "1. Оставить таймаут включённым. Для Directum RX разумно 20–30 минут.\n2. Передать разработчикам сервис и запрос, после которого транзакция остаётся открытой: это дефект кода, транзакцию забыли закрыть.\n3. Ручные сессии администраторов в psql и pgAdmin тоже попадают сюда: открытую транзакцию в консоли нужно завершать сразу.",
    "patterns": [
     "idle-in-transaction timeout",
-    "\\b25P03\\b"
+    "\\b25P03:|SQLSTATE\\W{0,4}25P03\\b|(Npgsql|PostgresException).{0,40}\\b25P03\\b|ERROR:\\s*25P03\\b"
    ],
    "slug": "postgresql-idle-in-transaction-session-timeout",
    "title": "FATAL: terminating connection due to idle-in-transaction timeout",
@@ -1207,7 +1210,7 @@
    "fix": "1. Поднять `max_locks_per_transaction` с 64 до 256. Для баз с тысячами таблиц это обычная настройка.\n2. Изменение требует перезапуска базы.\n3. Если ошибку даёт `pg_dump`, этого достаточно. Если её даёт рабочий запрос, покажите запрос разработчикам: трогать тысячи объектов в одной транзакции редко нужно.",
    "patterns": [
     "out of shared memory",
-    "max_locks_per_transaction"
+    "increase max_locks_per_transaction"
    ],
    "slug": "postgresql-out-of-shared-memory",
    "title": "ERROR: out of shared memory. HINT: You might need to increase max_locks_per_transaction",
@@ -1220,7 +1223,7 @@
    "fix": "1. Сверить пароль в настройках сервиса с тем, что задан роли. Спецсимволы в строке подключения часто ломают экранирование.\n2. При несовпадении способа: `set password_encryption = 'scram-sha-256'; alter role rx password '...';`.\n3. При истёкшем сроке: `alter role rx valid until 'infinity';`.\n4. Много таких ошибок с чужих адресов означает перебор паролей. Закройте порт базы от всех, кроме серверов приложений.",
    "patterns": [
     "password authentication failed for user",
-    "\\b28P01\\b"
+    "\\b28P01:|SQLSTATE\\W{0,4}28P01\\b|(Npgsql|PostgresException).{0,40}\\b28P01\\b|ERROR:\\s*28P01\\b"
    ],
    "slug": "postgresql-password-authentication-failed",
    "title": "FATAL: password authentication failed for user \"rx\"",
@@ -1257,7 +1260,7 @@
    "component": "PostgreSQL",
    "fix": "1. Подключиться к нужной базе или указать схему в запросе явно: `schema.table`.\n2. Для имени с заглавными буквами писать его в кавычках так же, как при создании.\n3. Если объекта нет, разобраться, почему не применилось обновление или публикация, и не создавать таблицу вручную: при следующем обновлении это приведёт к новому конфликту.",
    "patterns": [
-    "\\b42P01\\b",
+    "\\b42P01:|SQLSTATE\\W{0,4}42P01\\b|(Npgsql|PostgresException).{0,40}\\b42P01\\b|ERROR:\\s*42P01\\b",
     "relation \".*\" does not exist"
    ],
    "slug": "postgresql-relation-does-not-exist",
@@ -1270,7 +1273,7 @@
    "component": "PostgreSQL",
    "fix": "1. Пересоздать реплику с ведущего сервера (`pg_basebackup` или средствами вашего кластера).\n2. Чтобы не повторилось: использовать слот репликации или настроить `restore_command` из архива WAL. Слот держит журнал до тех пор, пока реплика его не заберёт.\n3. У слота есть обратная сторона: если реплика пропадёт надолго, журнал будет копиться на ведущем и может заполнить диск. Ограничить это помогает `max_slot_wal_keep_size` и алерт на неактивный слот.",
    "patterns": [
-    "requested WAL segment [0-9A-F]+ has already been removed",
+    "requested WAL segment ([0-9A-F]+ )?has already been removed",
     "could not receive data from WAL stream"
    ],
    "slug": "postgresql-requested-wal-segment-removed",
@@ -1283,8 +1286,8 @@
    "component": "PostgreSQL",
    "fix": "1. Подключиться к нужной базе.\n2. Если схема должна создаваться приложением или обновлением, разобраться, почему этого не произошло, и не создавать её вручную без понимания, что в ней должно быть.\n3. Если запрос из инструмента мониторинга или миграции проверяет схему другой СУБД, это нормальная проверка, и ошибку можно игнорировать.",
    "patterns": [
-    "\\b3F000\\b",
-    "schema \".{1,80}\" does not exist"
+    "\\b3F000:|SQLSTATE\\W{0,4}3F000\\b|(Npgsql|PostgresException).{0,40}\\b3F000\\b|ERROR:\\s*3F000\\b",
+    "schema (\"[^\"]{1,80}\"|\\S{1,80}) does not exist"
    ],
    "slug": "postgresql-schema-does-not-exist",
    "title": "ERROR: schema ... does not exist",
@@ -1309,7 +1312,7 @@
    "component": "PostgreSQL",
    "fix": "1. Исправить текст запроса: кавычки, имена, синтаксис.\n2. Если запрос собирает программа, найти место, где не подставился параметр, и перейти на параметризованные запросы вместо склейки строк.",
    "patterns": [
-    "\\b42601\\b",
+    "\\b42601:|SQLSTATE\\W{0,4}42601\\b|(Npgsql|PostgresException).{0,40}\\b42601\\b|ERROR:\\s*42601\\b",
     "syntax error at or near"
    ],
    "slug": "postgresql-syntax-error-at-or-near",
@@ -1324,7 +1327,7 @@
    "patterns": [
     "too many clients already",
     "remaining connection slots are reserved",
-    "\\b53300\\b"
+    "\\b53300:|SQLSTATE\\W{0,4}53300\\b|(Npgsql|PostgresException).{0,40}\\b53300\\b|ERROR:\\s*53300\\b"
    ],
    "slug": "postgresql-too-many-clients",
    "title": "FATAL: sorry, too many clients already",
@@ -1351,7 +1354,7 @@
    "patterns": [
     "ACCESS_REFUSED",
     "Login was refused using authentication mechanism",
-    "invalid credentials"
+    "user '[^']{1,80}' - invalid credentials"
    ],
    "slug": "rabbitmq-access-refused-login-was-refused",
    "title": "ACCESS_REFUSED - Login was refused using authentication mechanism PLAIN",
@@ -1389,7 +1392,7 @@
    "fix": "1. Найти, почему обработчик идёт дольше получаса: тяжёлый запрос к базе, большой документ, ожидание внешней системы. Это фактура для разработчиков.\n2. Если долгая обработка ожидаема (массовая операция, конвертация), увеличить `consumer_timeout` в `rabbitmq.conf`, значение в миллисекундах:\n\n    consumer_timeout = 7200000\n\n3. Не отключать таймаут совсем: без него зависший обработчик держит сообщения бесконечно, и этого никто не видит.",
    "patterns": [
     "delivery acknowledgement on channel \\d+ timed out",
-    "consumer_timeout",
+    "has timed out waiting for a consumer acknowledgement",
     "Error occured while getting message from queue"
    ],
    "slug": "rabbitmq-delivery-acknowledgement-timed-out",
@@ -1413,6 +1416,19 @@
    "what": "RabbitMQ остановил приём сообщений: мало места на диске"
   },
   {
+   "check": "    rabbitmqctl version\n    rabbitmqctl list_policies -p <vhost>\n    rabbitmqctl list_queues -p <vhost> name type | awk '{print $2}' | sort | uniq -c\n\nПервая команда покажет версию брокера, вторая уже заданные политики, третья типы очередей в виртуальном хосте. На 3.13 перед обновлением дополнительно:\n\n    rabbitmq-diagnostics check_if_cluster_has_classic_queue_mirroring_policy\n    rabbitmqctl list_feature_flags name state",
+   "component": "RabbitMQ",
+   "fix": "1. Не пытаться подобрать другое написание политики: на 4.x зеркалирования классических очередей нет ни в каком виде.\n2. Если нужен кластер именно по инструкции с `ha-all`, оставить брокер на 3.13.x и сверить версию с типовыми требованиями к ПО для вашей версии RX.\n3. Если нужна отказоустойчивость на 4.x, это кворумные очереди. Справка RX 25.2 не говорит, работает ли с ними RX и какой тип очереди объявляют сервисы, поэтому вариант сначала проверяют на тестовом стенде и уточняют у вендора.\n4. При обновлении 3.13 → 4.x заранее удалить политики с ключами `ha-` и включить все стабильные флаги функций. Без политики классические очереди остаются, но живут на одном узле.",
+   "patterns": [
+    "are not recognised policy settings",
+    "<<\"ha-(mode|sync-mode|params)\">>"
+   ],
+   "slug": "rabbitmq-ha-mode-not-recognised-policy",
+   "title": "[{<<\"ha-mode\">>,<<\"all\">>}] are not recognised policy settings",
+   "url": "https://drxinfra.ru/errors/rabbitmq-ha-mode-not-recognised-policy.html",
+   "what": "RabbitMQ 4.x не принимает политику зеркалирования очередей"
+  },
+  {
    "check": "    rabbitmq-diagnostics memory_breakdown\n    rabbitmqctl list_queues name messages consumers | sort -k2 -n | tail\n    rabbitmq-diagnostics status | grep -i -A2 \"memory\"\n\nПервая команда покажет, на что ушла память. Вторая найдёт очереди, в которых копятся сообщения.",
    "component": "RabbitMQ",
    "fix": "1. Найти очередь с накоплением и поднять её обработчик. Память освободится по мере разбора.\n2. Для контейнера задать порог явно, числом: `vm_memory_high_watermark.absolute = 1GB`, примерно 60 % от лимита контейнера.\n3. Удалить очереди, у которых давно нет потребителя, и задать политику срока жизни для временных очередей.\n4. Следить за памятью брокера постоянно. Об этом пороге обычно вспоминают после первой остановки.",
@@ -1429,7 +1445,7 @@
   {
    "check": "    rabbitmqctl list_queues name type arguments durable | grep <имя очереди>\n\nСравните вывод с тем, что запрашивает сервис в тексте ошибки.",
    "component": "RabbitMQ",
-   "fix": "1. Убедиться, что на брокер не смотрит второй стенд с другими настройками. Это самая неприятная причина: два стенда будут делить очереди.\n2. Если настройка изменена намеренно: остановить сервисы, дождаться пустых очередей и удалить старые. Сервисы создадут их заново с новыми параметрами.\n3. Если очередь не пуста, сначала дать обработчикам её разобрать, вернув прежнюю настройку. Удаление очереди удаляет и сообщения в ней.\n4. Если настройку меняли случайно, вернуть прежнее значение.",
+   "fix": "1. Убедиться, что на брокер не смотрит второй стенд с другими настройками. Это самая неприятная причина: два стенда будут делить очереди.\n2. Если настройка изменена намеренно: остановить сервисы, дождаться пустых очередей и удалить старые. Сервисы создадут их заново с новыми параметрами.\n3. Если очередь не пуста, сначала дать обработчикам её разобрать, вернув прежнюю настройку. Удаление очереди удаляет и сообщения в ней.\n4. Если настройку меняли случайно, вернуть прежнее значение.\n\nКак безопасно проверить работу RX с кворумными очередями на отдельном виртуальном хосте, есть в статье про политику ha-all и RabbitMQ 4 (https://drxinfra.ru/blog/rabbitmq-4-ha-all-policy.html).",
    "patterns": [
     "PRECONDITION_FAILED.{0,20}inequivalent arg",
     "inequivalent arg"
@@ -1454,7 +1470,7 @@
   {
    "check": "    rabbitmq-queues quorum_status <очередь> --vhost <vhost>\n    rabbitmqctl cluster_status\n    rabbitmq-diagnostics check_if_node_is_quorum_critical\n\nПервая команда покажет копии очереди, их состояние и лидера. Если большинства копий нет, очередь недоступна.",
    "component": "RabbitMQ",
-   "fix": "1. Вернуть в кластер недостающие узлы: копии очереди догонят лидера сами.\n2. Если узел потерян навсегда, убрать его копии и добавить на живые узлы: `rabbitmq-queues shrink <узел>` и `rabbitmq-queues grow <узел> all`.\n3. Проверить, что сервисы-клиенты переподключились. Если в их журналах нет новых подключений, перезапустить их.\n4. Перезапускать узлы кластера по одному и дожидаться синхронизации очередей перед следующим.",
+   "fix": "1. Вернуть в кластер недостающие узлы: копии очереди догонят лидера сами.\n2. Если узел потерян навсегда, убрать его копии и добавить на живые узлы: `rabbitmq-queues shrink <узел>` и `rabbitmq-queues grow <узел> all`.\n3. Проверить, что сервисы-клиенты переподключились. Если в их журналах нет новых подключений, перезапустить их.\n4. Перезапускать узлы кластера по одному и дожидаться синхронизации очередей перед следующим.\n\nПочему в RabbitMQ 4.x реплицируются только кворумные очереди и что это значит для кластера под RX, разобрано в статье про политику ha-all и RabbitMQ 4 (https://drxinfra.ru/blog/rabbitmq-4-ha-all-policy.html).",
    "patterns": [
     "failed consuming from quorum queue",
     "basic\\.consume caused a connection exception internal_error"
@@ -1496,9 +1512,9 @@
    "component": "Directum RX",
    "fix": "1. Перезапуск в окно обслуживания: ошибки ожидаемы, после него сервисы переподключаются сами.\n2. Перезапуск вне окна: разобрать причину по журналу базы (нехватка памяти, падение процесса, переключение кластера).\n3. Не завершать сессии RX массово без нужды: обрываются в том числе фоновые операции, которые потом повторяются с начала.\n4. Плановые работы с базой согласовывать с окнами, когда пользователей мало, и предупреждать администратора RX.",
    "patterns": [
-    "\\b57P01\\b",
+    "\\b57P01:|SQLSTATE\\W{0,4}57P01\\b|(Npgsql|PostgresException).{0,40}\\b57P01\\b|ERROR:\\s*57P01\\b",
     "terminating connection due to administrator command",
-    "\\b57P03\\b",
+    "\\b57P03:|SQLSTATE\\W{0,4}57P03\\b|(Npgsql|PostgresException).{0,40}\\b57P03\\b|ERROR:\\s*57P03\\b",
     "the database system is (starting up|shutting down|not yet accepting connections)"
    ],
    "slug": "rx-57p01-terminating-connection",
@@ -1616,7 +1632,7 @@
     "could not execute query",
     "could not initialize (lazy properties|a collection)",
     "violates foreign key constraint",
-    "\\b42P07\\b"
+    "\\b42P07:|SQLSTATE\\W{0,4}42P07\\b|(Npgsql|PostgresException).{0,40}\\b42P07\\b|ERROR:\\s*42P07\\b"
    ],
    "slug": "rx-could-not-execute-query",
    "title": "could not execute query",
@@ -1739,7 +1755,7 @@
    "component": "Directum RX",
    "fix": "1. Если пользователь работает с документом, дождаться окончания.\n2. Если блокировка зависла, снять её штатными средствами администрирования RX.\n3. Для интеграций повторять операцию позже, а не перезаписывать документ поверх блокировки.\n4. Связанная ошибка: Не удалось установить блокировку (https://drxinfra.ru/errors/rx-ne-udalos-ustanovit-blokirovku.html).",
    "patterns": [
-    "Документ с ИД \\d+ редактирует пользователь"
+    "Документ с ИД (\\d+ )?редактирует пользователь"
    ],
    "slug": "rx-document-locked-by-user",
    "title": "Документ с ИД редактирует пользователь",
@@ -1777,7 +1793,7 @@
    "patterns": [
     "Error while sending mail",
     "Application password is REQUIRED",
-    "Summary Mail\\."
+    "Summary Mail\\..{0,200}(error|fail|exception)"
    ],
    "slug": "rx-error-while-sending-mail",
    "title": "Error while sending mail",
@@ -1802,7 +1818,7 @@
    "component": "Directum RX",
    "fix": "Задать значения в пределах, которые приводит справка вендора:\n\n| Параметр | Предел |\n|---|---|\n| `EXPORT_TO_EXCEL_MAX_RECORDS_COUNT_FOR_USERS` | не больше 50 000 |\n| `EXPORT_TO_EXCEL_MAX_RECORDS_COUNT_FOR_ADMINISTRATORS_AND_AUDITORS` | не больше 200 000 |\n| `EXPORT_TO_EXCEL_MAX_RECORDS_COUNT_FOR_FORCED_CSV` | не больше 100 000 |\n\nПрименить конфигурацию и проверить, что предупреждение пропало из журнала после перезапуска веб-сервера.",
    "patterns": [
-    "EXPORT_TO_EXCEL_MAX_RECORDS_COUNT"
+    "EXPORT_TO_EXCEL_MAX_RECORDS_COUNT\\w*'? must be positive"
    ],
    "slug": "rx-export-to-excel-max-records",
    "title": "'EXPORT_TO_EXCEL_MAX_RECORDS_COUNT_FOR_USERS' must be positive and less or equal than 50000",
@@ -1872,9 +1888,9 @@
    "component": "Directum RX",
    "fix": "1. Восстановить зависимость. `INDEXING_SERVICE` вернётся в `healthy` сам, когда обработка возобновится.\n2. Подключить эти проверки к мониторингу: статус `degraded` у индексирования означает, что новые документы перестали попадать в поиск.",
    "patterns": [
-    "INDEXING_SERVICE",
-    "ELASTIC_SEARCH.{0,20}(unhealthy|degraded)",
-    "PREVIEW_STORAGE"
+    "INDEXING_SERVICE[^}]{0,40}\\b(degraded|unhealthy)",
+    "ELASTIC_SEARCH[^}]{0,40}\\b(degraded|unhealthy)",
+    "PREVIEW_STORAGE[^}]{0,40}\\b(degraded|unhealthy)"
    ],
    "slug": "rx-healthcheck-degraded-statuses",
    "title": "INDEXING_SERVICE degraded, ELASTIC_SEARCH unhealthy, PREVIEW_STORAGE degraded",
@@ -1903,7 +1919,8 @@
    "component": "Directum RX",
    "fix": "1. Кластер недоступен или закрыт на запись: сначала починить его, потом очередь разберётся сама. Смотрите статьи про заполненный диск (https://drxinfra.ru/errors/elasticsearch-read-only-allow-delete-block.html) и лимит шардов (https://drxinfra.ru/errors/elasticsearch-maximum-shards-open.html).\n2. Ошибка схемы на отдельных документах: передать разработчикам пример, поле и значение. Обычно лечится правкой схемы индекса и переиндексацией.\n3. Плохой файл: документ останется без полнотекстового поиска, но будет находиться по карточке.\n4. После любых работ с кластером проверить, что очередь индексации пуста, а не застряла.",
    "patterns": [
-    "IndexingServiceMessageHandler",
+    "IndexingServiceMessageHandler.{0,300}(error|failed|exception|ошибк)",
+    "\"l\":\\s?\"(Error|Fatal)\".{0,200}IndexingServiceMessageHandler",
     "Indexing completed with an error",
     "Entity update conflict for",
     "mapper_parsing_exception",
@@ -1975,9 +1992,9 @@
    "component": "Directum RX",
    "fix": "1. Переопубликовать пакет целиком и перезапустить сервисы, чтобы все узлы подхватили одну версию.\n2. Если ошибка на одном узле, перезапустить или пересоздать его.\n3. Для разработчиков: проверить, что в пакете есть все изменённые модули. Хорошая практика: после публикации прогонять короткий набор автотестов на ключевые действия.",
    "patterns": [
-    "Method \\w+ not found in type",
+    "Method (\\w+ )?not found in type",
     "MissingMethodException",
-    "get_Id\\(\\)"
+    "Method not found: '"
    ],
    "slug": "rx-method-not-found-in-type",
    "title": "Method not found in type",
@@ -2004,7 +2021,7 @@
    "patterns": [
     "Не удалось установить блокировку",
     "уже редактирует справочник",
-    "is locked\\.",
+    "(Async|Entity).{0,160} is locked\\.",
     "Try to unlock entity .{0,40}was failed",
     "An error occurred while rollback (resource|lock) transaction"
    ],
@@ -2098,7 +2115,7 @@
     "IDX20803",
     "IDX20804",
     "Unable to obtain configuration from",
-    "Exception occurred while processing message"
+    "(JwtBearer|OpenIdConnect)\\w*.{0,300}Exception occurred while processing message|Exception occurred while processing message.{0,300}(JwtBearer|OpenIdConnect)"
    ],
    "slug": "rx-oidc-unable-to-obtain-configuration",
    "title": "IDX20803: Unable to obtain configuration from",
@@ -2122,7 +2139,7 @@
    "component": "Directum RX",
    "fix": "1. Если экземпляр перезапускался, ошибки пройдут сами, когда кластер обновит состав.\n2. Если экземпляр перегружен, разбирать его нагрузку и ресурсы.\n3. Если не подключиться к живому экземпляру, проверить сетевые политики и межсетевой экран для внутреннего порта кластера.\n4. Связанная ошибка при старте сервиса: Hosting failed to start (https://drxinfra.ru/errors/rx-hosting-failed-to-start.html).",
    "patterns": [
-    "Response did not arrive on time in",
+    "Response did not arrive on time",
     "Unable to connect to endpoint S\\d"
    ],
    "slug": "rx-orleans-response-timeout",
@@ -2152,7 +2169,8 @@
     "При регистрации заявления на отзыв эл\\. доверенности",
     "При регистрации документа в реестре ФНС произошла ошибка",
     "необходима настройка подключения к сервису доверенностей",
-    "не совпадает с данными в сервисе доверенностей"
+    "не совпадает с данными в сервисе доверенностей",
+    "Ошибка регистрации (эл\\. )?доверенности"
    ],
    "slug": "rx-poa-fns-registration-errors",
    "title": "Ошибка регистрации эл. доверенности в реестре ФНС",
@@ -2188,7 +2206,8 @@
    "component": "Directum RX",
    "fix": "1. Единичные файлы: оставить как есть или попросить пользователя пересохранить документ в обычном формате.\n2. Массово: восстановить сервис конвертации, проверить лимиты памяти и таймауты. После этого предпросмотр для новых документов будет строиться, старые можно перестроить повторной публикацией версии.\n3. Считать эту ошибку фоном в общем потоке и строить алерт только на резкий рост.",
    "patterns": [
-    "PreviewCreator",
+    "PreviewCreator.{0,300}(error|failed|exception|не удалось)",
+    "\"l\":\\s?\"(Error|Fatal)\".{0,200}PreviewCreator",
     "conversion failed, result saved to storage"
    ],
    "slug": "rx-preview-creator",
@@ -2227,8 +2246,8 @@
    "component": "Directum RX",
    "fix": "1. Восстановить RabbitMQ.\n2. Перезапустить сервисы RX, в журналах которых после восстановления брокера нет записей о новом подключении.\n3. Поставить тревогу на очереди RX без потребителей: так видно сервис, который потерял соединение и молчит.",
    "patterns": [
-    "RabbitMQ connection .{0,120} recovery failed",
-    "RabbitMQ connection .{0,120} shutdowned",
+    "RabbitMQ connection (.{1,120} )?recovery failed",
+    "RabbitMQ connection (.{1,120} )?shutdowned",
     "FailedAutoRecovery"
    ],
    "slug": "rx-rabbitmq-connection-recovery-failed",
@@ -2278,8 +2297,7 @@
    "component": "Directum RX",
    "fix": "1. Для пользователей ничего не делать: это нормальная реакция на устаревшую ссылку.\n2. Для интеграций поправить обработку удалённых записей во внешней системе.\n3. Если записи исчезают неожиданно, разобрать, кто и как их удаляет.",
    "patterns": [
-    "Запись с идентификатором \\d+ не найдена",
-    "Запись с идентификатором -?\\d+ не найдена",
+    "Запись с идентификатором (-?\\d+ )?не найдена",
     "Не удалось (прочитать|удалить) запись с ИД \\d+\\. Запись не существует или у вас нет прав доступа"
    ],
    "slug": "rx-record-not-found",
@@ -2306,7 +2324,7 @@
    "patterns": [
     "Unexpected end of request content",
     "Чтение тела было прервано",
-    "The operation was canceled\\."
+    "(ConnectionAbortedException|BadHttpRequestException).{0,200}The operation was canceled"
    ],
    "slug": "rx-request-body-aborted",
    "title": "Unexpected end of request content",
@@ -2330,8 +2348,7 @@
    "component": "Установка и обновление",
    "fix": "1. Восстановить удалённые записи или перепривязать ссылки на существующие.\n2. Повторить восстановление ключей командой из справки вендора:\n\n    ./do.sh dt run --command=\"-n \\\"Service User\\\" -p <пароль> --restore-fk\"",
    "patterns": [
-    "' - FAILED",
-    "--restore-fk"
+    "'\\w+' - FAILED"
    ],
    "slug": "rx-restore-fk-failed",
    "title": "'Region' - FAILED (восстановление внешних ключей --restore-fk)",
@@ -2345,7 +2362,7 @@
    "patterns": [
     "The file indicated by the FilePath property does not exist",
     "Cannot add lock for .{0,40} with",
-    "Transfer fails = \\d+"
+    "Transfer fails = [1-9]\\d*"
    ],
    "slug": "rx-s3tool-transfer-errors",
    "title": "S3Tool: The file indicated by the FilePath property does not exist! Transfer fails",
@@ -2358,7 +2375,7 @@
    "fix": "1. Указать текущий пароль в параметре `AUTHENTICATION_PASSWORD` в конфигураторе Directum Launcher и применить конфигурацию.\n2. Перезапустить сервисы, чтобы они перечитали параметры.\n3. Пароль служебной учётной записи менять только вместе с конфигурацией, в одно окно, и записать это в регламент.",
    "patterns": [
     "Не удалось проверить подлинность пользователя",
-    "AUTHENTICATION_USE_THREAD_IDENTITY",
+    "параметров AUTHENTICATION_USE_THREAD_IDENTITY",
     "Cannot authenticate user .{0,60}Make sure that the values of parameters"
    ],
    "slug": "rx-service-user-authentication",
@@ -2450,9 +2467,7 @@
    "component": "Хранилище",
    "fix": "1. Если файлы нашлись в другом месте, вернуть их по нужному пути или поправить настройки хранилища, затем дождаться следующей проверки или запустить процесс вручную.\n2. Если потеря после переноса хранилища, докопировать недостающее из старого места. Как переносить бакет без простоя и сверять результат, разобрано в статье Перенос бакета S3 при работающей RX (https://drxinfra.ru/blog/s3-bucket-migration-no-downtime.html).\n3. Если хранилище и база восстанавливались из разных копий, достать недостающие файлы из резервной копии хранилища по путям из отчёта.\n4. Если данных нет нигде, по отчёту видно, какие документы и версии пострадали. Их авторов просят загрузить версии заново, а пустые версии помечают, чтобы ими не пользовались.\n5. На будущее: делать резервные копии базы и хранилища согласованно, в одно окно, и проверять восстановление обоих вместе. Подробнее в статье Бэкап RX на PostgreSQL: что считать бэкапом (https://drxinfra.ru/blog/postgresql-backup-restore-check.html).\n\nОтключать фоновый процесс, чтобы задачи перестали приходить, не стоит. Потери от этого не исчезнут, их просто перестанет быть видно.",
    "patterns": [
-    "Нарушена целостность данных сервисов хранилищ",
-    "Проверка целостности данных сервисов хранилищ",
-    "Результаты диагностики хранилища"
+    "Нарушена целостность данных сервисов хранилищ"
    ],
    "slug": "rx-storage-integrity-violated",
    "title": "Нарушена целостность данных сервисов хранилища",
@@ -2528,7 +2543,7 @@
    "component": "Directum RX",
    "fix": "1. Исправить XML формы в среде разработки и опубликовать исправленный пакет.\n2. Если ждать исправления нельзя, откатить публикацию на предыдущую версию пакета.\n3. Проверять пакет до публикации на тестовом стенде: открыть карточки изменённых типов.",
    "patterns": [
-    "start tag on line \\d+ position \\d+ does not match the end tag",
+    "start tag on line (\\d+ position \\d+ )?does not match the end tag",
     "Failed to load view settings from assembly"
    ],
    "slug": "rx-view-tag-mismatch",
@@ -2606,7 +2621,7 @@
    "component": "Сервер",
    "fix": "1. Убрать или перенастроить туннель на актуальный адрес.\n2. Если пробросы через этот сервер не нужны вовсе, запретить их в `sshd_config`: `AllowTcpForwarding no`.",
    "patterns": [
-    "connect_to .{1,80} port \\d+: failed"
+    "connect_to (.{1,80} )?port( \\d+)?: failed"
    ],
    "slug": "ssh-connect-to-port-failed",
    "title": "error: connect_to port: failed",

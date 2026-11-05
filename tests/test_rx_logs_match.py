@@ -21,19 +21,11 @@ SCRIPT = os.path.join(SCRIPTS, "match_errors.py")
 BASE = M.Base(BASE_FILE)
 SLUG = {e["slug"]: i for i, e in enumerate(BASE.entries)}
 
-# Заголовки этих записей на сайте пересказывают ошибку («column ... does not exist»), а не повторяют
-# строку журнала, поэтому собственные шаблоны их не находят. Если запись отсюда начала совпадать,
-# уберите её из списка; новая запись, которая не совпадает, роняет тест.
-TITLE_NOT_LITERAL = {
-    "deploymenttoolcore-exit-codes", "directum-launcher-root-action-already-exists",
-    "filebeat-failed-to-publish-connection-reset", "keycloak-login-error-events",
-    "kubernetes-exec-probe-timed-out", "kubernetes-failedmount-object-not-registered",
-    "pg-probackup-wal-segment-is-absent", "postgresql-column-does-not-exist",
-    "postgresql-requested-wal-segment-removed", "postgresql-schema-does-not-exist",
-    "rx-document-locked-by-user", "rx-method-not-found-in-type", "rx-orleans-response-timeout",
-    "rx-poa-fns-registration-errors", "rx-rabbitmq-connection-recovery-failed", "rx-record-not-found",
-    "rx-view-tag-mismatch", "ssh-connect-to-port-failed",
-}
+# Записи, чей заголовок на сайте пересказывает ошибку, а не повторяет строку журнала, и собственные
+# шаблоны его не находят. Сейчас таких нет: шаблоны пересказов («column ... does not exist») покрывают
+# и заголовок, и настоящую строку. Если запись отсюда начала совпадать, уберите её из списка; новая
+# запись, которая не совпадает, роняет тест.
+TITLE_NOT_LITERAL = set()
 
 
 def winner(line):
@@ -197,10 +189,40 @@ class RecordTest(unittest.TestCase):
         self.assertIsNone(winner('{"l":"Info","span":{"name":"Conversion","durationMs":23505}}'))
         self.assertEqual(winner("Npgsql.PostgresException: SqlState 23505"), "postgresql-duplicate-key-unique-constraint")
         self.assertEqual(winner("PostgresException: 40P01: deadlock"), "postgresql-deadlock-detected-40p01")
+        # шаблоны SQLSTATE сами требуют контекста, без поправок в match_errors.py
+        for line in ("документ 57014 сохранён", "Задача 23505 выполнена за 42601 мс", "ERROR Document 40P01 not found"):
+            self.assertIsNone(winner(line), line)
+        self.assertEqual(winner("ERROR:  57014: canceling statement"), "postgresql-canceling-statement-due-to-statement-timeout")
+        self.assertEqual(winner('{"l":"Error","ex":{"SqlState":"55P03"}}'), "postgresql-canceling-statement-lock-timeout")
 
     def test_healthy_status_is_not_error(self):
         self.assertIsNone(winner('"INDEXING_SERVICE": {"Status": "healthy", "Duration": "00:00:00.001"}'))
         self.assertEqual(winner("INDEXING_SERVICE: degraded"), "rx-healthcheck-degraded-statuses")
+        for line in ("INDEXING_SERVICE healthy", "PREVIEW_STORAGE: Healthy",
+                     '{"INDEXING_SERVICE": {"Status": "healthy"}, "PREVIEW_STORAGE": {"Status": "healthy"}}'):
+            self.assertIsNone(winner(line), line)
+        self.assertEqual(winner('"PREVIEW_STORAGE": {"Status": "Degraded"}'), "rx-healthcheck-degraded-statuses")
+
+    def test_generic_words_need_context(self):
+        for line in ("Binary data to transfer = 10. Processed = 10. Left = 0. Transfer fails = 0.",
+                     "4 drives online, 0 drives offline", "at Sungero.Docflow.Server.Foo.get_Id()",
+                     '{"l":"Info","lg":"PreviewCreator","mt":"Preview created"}',
+                     "LDAP bind: invalid credentials"):
+            self.assertIsNone(winner(line), line)
+
+    def test_real_lines_for_paraphrased_titles(self):
+        cases = {
+            'ERROR:  column "statusx" does not exist at character 8': "postgresql-column-does-not-exist",
+            "FATAL:  requested WAL segment 00000001000000A0000000FF has already been removed":
+                "postgresql-requested-wal-segment-removed",
+            "sshd[811]: error: connect_to 10.0.0.5 port 5432: failed.": "ssh-connect-to-port-failed",
+            "RabbitMQ connection 'rx-worker' recovery failed.": "rx-rabbitmq-connection-recovery-failed",
+            'MountVolume.SetUp failed for volume "cfg" : object "rx"/"rx-config" not registered':
+                "kubernetes-failedmount-object-not-registered",
+            'Readiness probe failed: command "rabbitmq-diagnostics ping" timed out': "kubernetes-exec-probe-timed-out",
+        }
+        for line, slug in cases.items():
+            self.assertEqual(winner(line), slug, line)
 
 
 class TimeTest(unittest.TestCase):
