@@ -1,15 +1,38 @@
 {
   "name": "drxinfra",
   "description": "Плагины drxinfra для эксплуатации Directum RX",
-  "owner": { "name": "drxinfra" },
+  "owner": {
+    "name": "drxinfra"
+  },
   "plugins": [
     {
       "name": "rxops",
       "source": "./",
-      "description": "Скилы для администраторов Directum RX: инцидент, логи и база ошибок, PostgreSQL, RabbitMQ, Elasticsearch, обновление, бэкап, ИБ, прикладной код, сайзинг. Хуки прячут пароли и спрашивают перед изменениями.",
-      "version": "0.2.0",
+      "description": "Скилы для администраторов Directum RX: инцидент, логи и база ошибок, PostgreSQL, RabbitMQ, Elasticsearch, обновление, бэкап, ИБ, прикладной код, сайзинг. Хуки безопасности даёт agent-guard, он ставится вместе.",
+      "version": "0.3.0",
       "category": "devops",
-      "tags": ["directum-rx", "devops", "postgresql", "rabbitmq", "elasticsearch"]
+      "tags": [
+        "directum-rx",
+        "devops",
+        "postgresql",
+        "rabbitmq",
+        "elasticsearch"
+      ]
+    },
+    {
+      "name": "agent-guard",
+      "source": {
+        "source": "github",
+        "repo": "drxinfra/agent-guard"
+      },
+      "description": "Безопасность ИИ-агента на серверах: подтверждение перед командами, которые меняют систему, маскировка паролей до модели, профили и журнал.",
+      "category": "security",
+      "tags": [
+        "security",
+        "devops",
+        "sre",
+        "hooks"
+      ]
     }
   ]
 }

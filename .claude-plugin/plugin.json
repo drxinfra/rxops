@@ -1,10 +1,26 @@
 {
   "name": "rxops",
-  "version": "0.2.0",
-  "description": "Скилы для администраторов Directum RX: разбор инцидента, логи и база ошибок, PostgreSQL, RabbitMQ, Elasticsearch, обновление с откатом, проверка бэкапа, самооценка ИБ, надёжность прикладного кода, сайзинг, подключение rxmcp. Хуки прячут пароли в выводе и спрашивают перед командами, которые меняют систему.",
-  "author": { "name": "drxinfra", "url": "https://drxinfra.ru" },
+  "version": "0.3.0",
+  "description": "Скилы для администраторов Directum RX: разбор инцидента, логи и база ошибок, PostgreSQL, RabbitMQ, Elasticsearch, обновление с откатом, проверка бэкапа, самооценка ИБ, надёжность прикладного кода, сайзинг, подключение rxmcp. Хуки безопасности ставятся вместе с ним плагином agent-guard: подтверждение перед командами, которые меняют систему, и маскировка паролей в выводе.",
+  "author": {
+    "name": "drxinfra",
+    "url": "https://drxinfra.ru"
+  },
   "homepage": "https://drxinfra.ru/rxops.html",
   "repository": "https://github.com/drxinfra/rxops",
   "license": "Apache-2.0",
-  "keywords": ["directum", "directum-rx", "sungero", "devops", "sre", "postgresql", "rabbitmq", "elasticsearch", "agent-skills"]
+  "keywords": [
+    "directum",
+    "directum-rx",
+    "sungero",
+    "devops",
+    "sre",
+    "postgresql",
+    "rabbitmq",
+    "elasticsearch",
+    "agent-skills"
+  ],
+  "dependencies": [
+    "agent-guard"
+  ]
 }

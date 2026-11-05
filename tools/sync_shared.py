@@ -21,7 +21,6 @@ def targets():
     for name in sorted(os.listdir(os.path.join(ROOT, "skills"))):
         if os.path.isfile(os.path.join(ROOT, "skills", name, "SKILL.md")):
             yield os.path.join(ROOT, "skills", name, "scripts")
-    yield os.path.join(ROOT, "hooks")
 
 
 def main(check):

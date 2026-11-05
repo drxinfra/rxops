@@ -15,7 +15,7 @@ import sys
 import zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PLUGIN_FILES = [".claude-plugin", "skills", "hooks", "README.md", "LICENSE", "NOTICE"]
+PLUGIN_FILES = [".claude-plugin", "skills", "README.md", "LICENSE", "NOTICE"]
 SKIP_DIRS = {"__pycache__", ".git"}
 SKIP_FILES = {".DS_Store"}
 # Одинаковое время у всех файлов: архив с теми же исходниками даёт ту же сумму.

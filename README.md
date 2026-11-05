@@ -2,7 +2,7 @@
 
 <img src="assets/icon.svg" width="88" height="88" align="right" alt="rxops">
 
-**Agent Skills for Directum RX operations.** A Claude Code plugin with skills for administrators of Directum RX (Sungero): incident triage, logs and a base of ~200 known errors, PostgreSQL, RabbitMQ, Elasticsearch, updates with rollback, backup verification, security self-assessment, sizing, and connecting the agent to RX help via [rxmcp](https://github.com/drxinfra/rxmcp). Read-only by default; hooks ask before state-changing commands and mask secrets before the model sees them. Content is in Russian.
+**Agent Skills for Directum RX operations.** A Claude Code plugin with skills for administrators of Directum RX (Sungero): incident triage, logs and a base of ~200 known errors, PostgreSQL, RabbitMQ, Elasticsearch, updates with rollback, backup verification, security self-assessment, sizing, and connecting the agent to RX help via [rxmcp](https://github.com/drxinfra/rxmcp). Read-only by default; safety hooks come from the agent-guard plugin (installed as a dependency). Content is in Russian.
 
 Набор скилов для ИИ-агента, который помогает администратору Directum RX: разобрать инцидент, найти ошибку в логах, проверить базу, брокер, поиск и бэкап, спланировать обновление, оценить защищённость и посчитать железо. Скил — это инструкция для агента: что смотреть, какими командами, что считать нормой и куда идти дальше. Агент подгружает нужный скил сам, когда тема вопроса совпала с его описанием.
 
@@ -28,15 +28,17 @@
 
 ## Безопасность
 
-- **Сначала только чтение.** Скилы предписывают агенту сначала смотреть, а команду, которая что-то меняет, показывать и выполнять только после явного согласия. Скрипты проверок ничего не меняют.
-- **Хук подтверждения.** Перед командами, которые меняют систему (`systemctl restart`, `docker compose down`, `kubectl apply`, запись в базу через `psql`, `rabbitmqctl purge_queue`, `curl -X DELETE`, удаление в системных каталогах, установка пакетов и т. п.), Claude Code спрашивает человека, даже в автоматическом режиме. Форматирование дисков и `rm -rf /` хук запрещает совсем.
-- **Хук маскировки.** Вывод команд, прочитанные файлы и результаты поиска проходят через маскировщик до того, как их увидит модель: пароли, токены, ключи, строки подключения и учётки в адресах заменяются на `‹скрыто›`. Проверено в Claude Code 2.1: модель получает маску вместо значения.
-- **Ограничения.** Хуки работают только в Claude Code и нужен `python3` в `PATH`; без него хуки не срабатывают, и защита держится только на инструкциях скилов. Проверка команд построена на шаблонах, и необычно записанную команду она может пропустить. В режиме полного обхода разрешений (`--dangerously-skip-permissions`) не полагайтесь на подтверждение. Маскировка действует на то, что уходит модели; если в организации включён экспорт телеметрии Claude Code, исходный вывод может попасть туда.
-- Выключить хуки: `RXOPS_GUARD=off` (подтверждение) и `RXOPS_MASK=off` (маскировка) в переменных окружения или в `env` настроек Claude Code.
+- **Сначала только чтение.** Скилы предписывают агенту сначала смотреть, а команду, которая что-то меняет, показывать и выполнять только после явного согласия. Скрипты проверок ничего не меняют и сами прячут пароли в своём выводе.
+- **Хуки ставятся вместе с rxops** плагином [agent-guard](https://github.com/drxinfra/agent-guard) (зависимость в том же каталоге `drxinfra`):
+  - перед командами, которые меняют систему (`systemctl restart`, `kubectl apply`, `terraform apply`, запись в базу, очистка очереди, удаление в системных каталогах и т. п.), Claude Code спрашивает человека, даже в автоматическом режиме;
+  - пароли, токены и ключи в выводе команд, прочитанных файлах и результатах поиска модель видит как `‹скрыто›`;
+  - профили строгости `prod`, `test`, `off` и журнал команд агента.
+
+  Проверено вживую в Claude Code 2.1. Ограничения, настройки и выключение описаны в README agent-guard.
 
 ## Установка
 
-**Claude Code** (рекомендуется: скилы и хуки):
+**Claude Code** (рекомендуется: скилы и хуки agent-guard ставятся вместе):
 
 ```
 /plugin marketplace add drxinfra/rxops
@@ -67,7 +69,7 @@
 
 - Как устроен скил и правила оформления: [docs/authoring.md](docs/authoring.md).
 - Проверки: `python3 tools/check_skills.py`, `python3 -m unittest discover -s tests`, `sh tools/leakcheck.sh`.
-- Общий маскировщик живёт в `shared/`, копии в скилах и хуках раскладывает `python3 tools/sync_shared.py`.
+- Общий маскировщик живёт в `shared/`, копии в скилах раскладывает `python3 tools/sync_shared.py`.
 - Справочник ошибок для `rx-logs` собирается из статей сайта: `python3 tools/sync_errors.py`.
 - Архивы релиза: `python3 tools/package.py`.
 
