@@ -64,7 +64,7 @@ def _pem(m):
     return "-----BEGIN %s-----\n%s\n-----END %s-----" % (m.group(1), MASK, m.group(1))
 
 
-# 2. Учётка в адресе: scheme://user:password@host
+# 2. Учётка в адресе: логин и пароль перед @ в URL
 @rule(r"(\b[a-z][a-z0-9+.\-]*://[^\s/:@'\"]+:)([^\s@/'\"]+)(@)", re.I)
 def _url(m):
     if PLACEHOLDER.match(m.group(2)):

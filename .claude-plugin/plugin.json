@@ -1,7 +1,7 @@
 {
   "name": "rxops",
-  "version": "0.1.1",
-  "description": "Скилы для администраторов Directum RX: разбор инцидента, логи и база ошибок, PostgreSQL, RabbitMQ, Elasticsearch, обновление с откатом, проверка бэкапа, самооценка ИБ, сайзинг, подключение rxmcp. Хуки прячут пароли в выводе и спрашивают перед командами, которые меняют систему.",
+  "version": "0.2.0",
+  "description": "Скилы для администраторов Directum RX: разбор инцидента, логи и база ошибок, PostgreSQL, RabbitMQ, Elasticsearch, обновление с откатом, проверка бэкапа, самооценка ИБ, надёжность прикладного кода, сайзинг, подключение rxmcp. Хуки прячут пароли в выводе и спрашивают перед командами, которые меняют систему.",
   "author": { "name": "drxinfra", "url": "https://drxinfra.ru" },
   "homepage": "https://drxinfra.ru/rxops.html",
   "repository": "https://github.com/drxinfra/rxops",
