@@ -1,0 +1,15 @@
+{
+  "name": "drxinfra",
+  "description": "Плагины drxinfra для эксплуатации Directum RX",
+  "owner": { "name": "drxinfra" },
+  "plugins": [
+    {
+      "name": "rxops",
+      "source": "./",
+      "description": "Скилы для администраторов Directum RX: инцидент, логи и база ошибок, PostgreSQL, RabbitMQ, Elasticsearch, обновление, бэкап, ИБ, сайзинг. Хуки прячут пароли и спрашивают перед изменениями.",
+      "version": "0.1.0",
+      "category": "devops",
+      "tags": ["directum-rx", "devops", "postgresql", "rabbitmq", "elasticsearch"]
+    }
+  ]
+}

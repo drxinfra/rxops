@@ -1,0 +1,37 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+      # Шаблоны утечек хранятся в секрете репозитория; в форках секрета нет, и проверка пропускается.
+      - run: sh tools/leakcheck.sh
+        env:
+          LEAKCHECK_PATTERN: ${{ secrets.LEAKCHECK_PATTERN }}
+      - run: python3 tools/sync_shared.py --check
+      - run: python3 tools/check_skills.py
+        env:
+          LEAKCHECK_PATTERN: ${{ secrets.LEAKCHECK_PATTERN }}
+      - run: python3 -m unittest discover -s tests -v
+      - run: python3 tools/package.py
+      - name: claude plugin validate
+        run: |
+          npm install -g @anthropic-ai/claude-code
+          claude plugin validate . --strict
+
+  # Скрипты скилов должны работать на старом Python закрытых контуров (Astra Linux 1.7: Python 3.7).
+  old-python:
+    runs-on: ubuntu-latest
+    container: python:3.7-slim
+    steps:
+      - uses: actions/checkout@v7
+      - run: python3 -m unittest discover -s tests

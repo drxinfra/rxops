@@ -1,0 +1,43 @@
+name: release
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    # id-token и attestations нужны для подписи происхождения архивов (Sigstore через OIDC GitHub).
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+      - run: sh tools/leakcheck.sh
+        env:
+          LEAKCHECK_PATTERN: ${{ secrets.LEAKCHECK_PATTERN }}
+      - run: python3 tools/sync_shared.py --check
+      - run: python3 tools/check_skills.py
+      - run: python3 -m unittest discover -s tests
+      - name: версия в plugin.json совпадает с тегом
+        run: |
+          v=$(python3 -c "import json; print(json.load(open('.claude-plugin/plugin.json'))['version'])")
+          test "v$v" = "$GITHUB_REF_NAME"
+      - run: python3 tools/package.py
+      # Проверка у пользователя: gh attestation verify <архив> --repo drxinfra/rxops
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            dist/*.zip
+            dist/skills/*.zip
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.zip
+            dist/skills/*.zip
+            dist/SHA256SUMS
+          generate_release_notes: true
