@@ -2,7 +2,7 @@
 
 <img src="assets/icon.svg" width="88" height="88" align="right" alt="rxops">
 
-**Agent Skills for Directum RX operations.** A Claude Code plugin with skills for administrators of Directum RX (Sungero): incident triage, logs and a base of ~200 known errors, PostgreSQL, RabbitMQ, Elasticsearch, updates with rollback, backup verification, security self-assessment, sizing, and connecting the agent to RX help via [rxmcp](https://github.com/drxinfra/rxmcp). Read-only by default; safety hooks come from the agent-guard plugin (installed as a dependency). Content is in Russian.
+**Agent Skills for Directum RX operations.** A Claude Code plugin with skills for administrators of Directum RX (Sungero): incident triage, logs and a base of ~200 known errors, PostgreSQL, RabbitMQ, Elasticsearch, updates with rollback, backup verification, security self-assessment, sizing, and connecting the agent to RX help via [rxmcp](https://github.com/drxinfra/rxmcp). Read-only by default: `es_check.py`, `mq_check.py` and `preflight.py` send read-only GET requests only to the addresses you give them (Elasticsearch, RabbitMQ management API, the RX health check URL); nothing is sent anywhere else. Safety hooks come from the agent-guard plugin (installed as a dependency). Content is in Russian.
 
 Набор скилов для ИИ-агента, который помогает администратору Directum RX: разобрать инцидент, найти ошибку в логах, проверить базу, брокер, поиск и бэкап, спланировать обновление, оценить защищённость и посчитать железо. Скил — это инструкция для агента: что смотреть, какими командами, что считать нормой и куда идти дальше. Агент подгружает нужный скил сам, когда тема вопроса совпала с его описанием.
 
@@ -28,7 +28,7 @@
 
 ## Безопасность
 
-- **Сначала только чтение.** Скилы предписывают агенту сначала смотреть, а команду, которая что-то меняет, показывать и выполнять только после явного согласия. Скрипты проверок ничего не меняют и сами прячут пароли в своём выводе.
+- **Сначала только чтение.** Скилы предписывают агенту сначала смотреть, а команду, которая что-то меняет, показывать и выполнять только после явного согласия. Скрипты проверок ничего не меняют и сами прячут пароли в своём выводе. В сеть ходят только `es_check.py`, `mq_check.py` и `preflight.py`: GET-запросы на чтение к API Elasticsearch и RabbitMQ и к адресу проверки работоспособности RX, которые вы им дали. Больше никуда данные не уходят.
 - **Хуки ставятся вместе с rxops** плагином [agent-guard](https://github.com/drxinfra/agent-guard) (зависимость в том же каталоге `drxinfra`):
   - перед командами, которые меняют систему (`systemctl restart`, `kubectl apply`, `terraform apply`, запись в базу, очистка очереди, удаление в системных каталогах и т. п.), Claude Code спрашивает человека, даже в автоматическом режиме;
   - пароли, токены и ключи в выводе команд, прочитанных файлах и результатах поиска модель видит как `‹скрыто›`;
